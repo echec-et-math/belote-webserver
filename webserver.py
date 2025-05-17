@@ -36,7 +36,7 @@ def website_root():
 
 @app.get("/submit")
 def submitcode_get():
-    resp = make_response("""<form action="submit" method="post" enctype=multipart/form-data>
+    resp = make_response("""<p><form action="submit" method="post" enctype=multipart/form-data>
     <p>Ronde :
     <select id="round" name="round">
         <option value=0 disabled selected>Choisissez un numéro de ronde...</option>
@@ -63,7 +63,9 @@ def submitcode_get():
 	</select></p>
     <p>Score (négatif si défaite) : <input id="score" name="score" type="number min="-1000" max="1000"/></p>
     <p><input type="submit" value="Submit"></p>
-</form>""")
+</form></p>
+<p><a href="/">RETOUR PAGE PRINCIPALE</a></p>
+""")
     return resp, 200
 
 @app.post("/submit")
@@ -71,24 +73,24 @@ def submitcode_post():
     name = request.cookies.get("belote_user_id")
     team = request.cookies.get("belote_user_team")
     if name == None or team == None:
-        resp = make_response("Non identifié auprès serveur - soumission de score ignorée.")
+        resp = make_response("""<p>Non identifié auprès serveur - soumission de score ignorée.</p><p><a href="/">RETOUR PAGE PRINCIPALE</a></p>""")
         return resp, 401
     try:
         ronde = int(request.form.get("round"))
         score = int(request.form.get("score"))
         assert 1 <= ronde and ronde <= 20
     except Exception:
-        resp = make_response("Format de ronde invalide - soumission de score ignorée.")
+        resp = make_response("""<p>Format de ronde invalide - soumission de score ignorée.</p><p><a href="/">RETOUR PAGE PRINCIPALE</a></p>""")
         return resp, 400
     # file operation using pandas
     logRonde(name, team, ronde, score)
     logRondeText(name, team, ronde, score)
-    resp = make_response("Ronde correctement enregistrée.")
+    resp = make_response("""<p>Ronde correctement enregistrée.</p><p><a href="/">RETOUR PAGE PRINCIPALE</a></p>""")
     return resp, 201
 
 @app.get("/register")
 def register_get():
-    resp = make_response("""<form action="register" method="post" enctype=multipart/form-data>
+    resp = make_response("""<p><form action="register" method="post" enctype=multipart/form-data>
     <p>Nom : <input id="name" name="name" type="text"/></p>
     <p>Équipe :
     <select id="team" name="team">
@@ -105,7 +107,7 @@ def register_get():
         <option value="EO5">EO5</option>
 	</select></p>
     <input type="submit" value="Envoyer">
-</form>""")
+</form></p><p><a href="/">RETOUR PAGE PRINCIPALE</a></p>""")
     return resp, 200
 
 @app.post("/register")
@@ -116,29 +118,29 @@ def register_post():
     team = request.form.get("team")
     if name == None or team == None:
         # invalid form post
-        resp = make_response("Enregistrement invalide.")
+        resp = make_response("""<p>Enregistrement invalide.</p><p><a href="/">RETOUR PAGE PRINCIPALE</a></p>""")
         return resp, 400
     cookie1 = request.cookies.get("belote_user_id")
     cookie2 = request.cookies.get("belote_user_team")
-    resp = make_response(f"Enregistré en temps que {str(name)} ({str(team)}) !")
+    resp = make_response(f"""<p>Enregistré en temps que {str(name)} ({str(team)}) !</p><p><a href="/">RETOUR PAGE PRINCIPALE</a></p>""")
     if cookie1 == None or cookie2 == None: # case when only one of them is set is ill-defined and will not be considered apart
         resp.set_cookie("belote_user_id", name)
         resp.set_cookie("belote_user_team", team)
         return resp, 201
     else:
         # user already exists
-        resp = make_response(f"Déjà enregistré en temps que {str(cookie1)} ({str(cookie2)}) !")
+        resp = make_response(f"""<p>Déjà enregistré en temps que {str(cookie1)} ({str(cookie2)}) !</p><p><a href="/">RETOUR PAGE PRINCIPALE</a></p>""")
         return resp, 403
 
 @app.get("/unregister")
 def unregister():
     cookie = request.cookies.get("belote_user_id")
     if cookie != None:
-        resp = make_response("Déconnecté.")
+        resp = make_response("""<p>Déconnecté.</p><p><a href="/">RETOUR PAGE PRINCIPALE</a></p>""")
         resp.delete_cookie("belote_user_id")
         resp.delete_cookie("belote_user_team")
         return resp, 201
     else:
         # user doesn't exist
-        resp = make_response("Vous n'êtes pas connecté au serveur !")
+        resp = make_response("""<p>Vous n'êtes pas connecté au serveur !</p><p><a href="/">RETOUR PAGE PRINCIPALE</a></p>""")
         return resp, 403
