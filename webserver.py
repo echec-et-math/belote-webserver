@@ -11,9 +11,18 @@ app = Flask(__name__)
 ###########
 ## Fonctions de I/O système
 
-def logRonde(name, teamtype, ronde, score):
-    # pandas stuff
-    pass
+# Define column names
+column_names=["#Ronde", "NS1", "NS2", "NS3", "NS4", "NS5"]
+
+dataframe=pd.read_excel("scores.xlsx")
+
+def logRonde(name, team, ronde, score):
+    dataframe.at[int(ronde), team] = int(score)
+    dataframe.to_excel("scores.xlsx")
+
+def logRondeText(name, team, ronde, score):
+    with open("scores.txt", "a") as f:
+        f.write(f"{name} : {team} marque {score} à la ronde {ronde}\n")
 
 ###########
 ## Fonctions de l'API
@@ -60,8 +69,8 @@ def submitcode_get():
 @app.post("/submit")
 def submitcode_post():
     name = request.cookies.get("belote_user_id")
-    teamtype = request.cookies.get("belote_user_team_type")
-    if name == None or teamtype == None:
+    team = request.cookies.get("belote_user_team")
+    if name == None or team == None:
         resp = make_response("Non identifié auprès serveur - soumission de score ignorée.")
         return resp, 401
     try:
@@ -72,7 +81,8 @@ def submitcode_post():
         resp = make_response("Format de ronde invalide - soumission de score ignorée.")
         return resp, 400
     # file operation using pandas
-    logRonde(name, teamtype, ronde, score)
+    logRonde(name, team, ronde, score)
+    logRondeText(name, team, ronde, score)
     resp = make_response("Ronde correctement enregistrée.")
     return resp, 201
 
@@ -80,7 +90,20 @@ def submitcode_post():
 def register_get():
     resp = make_response("""<form action="register" method="post" enctype=multipart/form-data>
     <p>Nom : <input id="name" name="name" type="text"/></p>
-    <p>Type d'équipe : <input type="radio" name="teamtype" value="NS" id="NS" required/> NS <input type="radio" name="teamtype" value="EO" id="EO"/> EO</p>
+    <p>Équipe :
+    <select id="team" name="team">
+        <option value=0 disabled selected>Choisissez une équipe...</option>
+        <option value="NS1">NS1</option>
+        <option value="NS2">NS2</option>
+        <option value="NS3">NS3</option>
+        <option value="NS4">NS4</option>
+        <option value="NS5">NS5</option>
+        <option value="EO1">EO1</option>
+        <option value="EO2">EO2</option>
+        <option value="EO3">EO3</option>
+        <option value="EO4">EO4</option>
+        <option value="EO5">EO5</option>
+	</select></p>
     <input type="submit" value="Envoyer">
 </form>""")
     return resp, 200
@@ -90,17 +113,17 @@ def register_post():
     # build according cookie
     # add cookie to jar
     name = request.form.get("name")
-    teamtype = request.form.get("teamtype")
-    if name == None or teamtype == None:
+    team = request.form.get("team")
+    if name == None or team == None:
         # invalid form post
         resp = make_response("Enregistrement invalide.")
         return resp, 400
     cookie1 = request.cookies.get("belote_user_id")
-    cookie2 = request.cookies.get("belote_user_team_type")
-    resp = make_response(f"Enregistré en temps que {str(name)} ({str(teamtype)}) !")
+    cookie2 = request.cookies.get("belote_user_team")
+    resp = make_response(f"Enregistré en temps que {str(name)} ({str(team)}) !")
     if cookie1 == None or cookie2 == None: # case when only one of them is set is ill-defined and will not be considered apart
         resp.set_cookie("belote_user_id", name)
-        resp.set_cookie("belote_user_team_type", teamtype)
+        resp.set_cookie("belote_user_team", team)
         return resp, 201
     else:
         # user already exists
@@ -113,7 +136,7 @@ def unregister():
     if cookie != None:
         resp = make_response("Déconnecté.")
         resp.delete_cookie("belote_user_id")
-        resp.delete_cookie("belote_user_team_type")
+        resp.delete_cookie("belote_user_team")
         return resp, 201
     else:
         # user doesn't exist
