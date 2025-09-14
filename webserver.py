@@ -12,12 +12,12 @@ app = Flask(__name__)
 ## Fonctions de I/O système
 
 # Define column names
-column_names=["#Ronde", "NS1", "NS2", "NS3", "NS4", "NS5"]
+column_names=["#Ronde", "NS1", "NS2", "NS3", "NS4", "NS5", "EO1", "EO2", "EO3", "EO4", "EO5"]
 
 dataframe=pd.read_excel("scores.xlsx")
 
 def logRonde(name, team, ronde, score):
-    dataframe.at[int(ronde), team] = int(score)
+    dataframe.at[int(ronde)-1, team] = int(score)
     dataframe.to_excel("scores.xlsx")
 
 def logRondeText(name, team, ronde, score):
