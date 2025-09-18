@@ -420,5 +420,3 @@ def unregister():
         # user doesn't exist
         resp = make_response("""<p>Vous n'êtes pas connecté au serveur !</p><p><a href="/">RETOUR PAGE PRINCIPALE</a></p>""")
         return resp, 403
-
-if __name__ == "__main__":
