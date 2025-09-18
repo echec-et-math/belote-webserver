@@ -251,7 +251,7 @@ def submitcode_get():
         <option value=19>19</option>
         <option value=20>20</option>
 	</select></p>
-    <p>Score (négatif si défaite) : <input id="score" name="score" type="number min="-1000" max="1000"/></p>
+    <p>Score (négatif si défaite) : <input id="score" name="score" type="number min="-250" max="250"/></p>
     <p><input type="submit" value="Submit"></p>
 </form></p>
 <p><a href="/">RETOUR PAGE PRINCIPALE</a></p>
@@ -335,7 +335,7 @@ def rectification_get():
         <option value=19>19</option>
         <option value=20>20</option>
 	</select></p>
-    <p>Score (négatif si défaite) : <input id="score" name="score" type="number min="-1000" max="1000"/></p>
+    <p>Score (négatif si défaite) : <input id="score" name="score" type="number min="-250" max="250"/></p>
     <p><input type="submit" value="Submit"></p>
 </form></p>
 <p><a href="/">RETOUR PAGE PRINCIPALE</a></p>
