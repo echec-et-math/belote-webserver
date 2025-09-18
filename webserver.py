@@ -39,6 +39,7 @@ def initDonnes():
         for j in column_names[1:]:
             dataframe_donnes.at[4*nbNS+i, j] = None
     dataframe_donnes.to_excel("donnes.xlsx")
+    return dataframe_donnes
 
 def initScores():
     dataframe_scores = pd.DataFrame(columns=column_names+extracols_scores)
@@ -53,6 +54,7 @@ def initScores():
         for j in column_names[1:]:
             dataframe_scores.at[4*nbNS+i, j] = None
     dataframe_scores.to_excel("scores.xlsx")
+    return dataframe_scores
 
 class ContradictionScoreError(Exception):
     def __init__(self, msg):
@@ -191,24 +193,25 @@ def finalizeRound(ronde):
 
 def getOpponentTeam(team, ronde):
     if team[:2] == "NS":
-        return "EO" + str([1,3,2,4,4,2,1,3,2,4,3,1,3,1,4,2][(ronde-1)//4 + int(team[2])-1])
+        return "EO" + str([1,3,2,4,4,2,1,3,2,4,3,1,3,1,4,2][(ronde-1)//nbNS * nbNS + int(team[2])-1])
     else:
-        return "NS" + str([1,3,2,4,3,2,4,1,4,1,3,2,2,4,1,3][(ronde-1)//4 + int(team[2])-1])
+        return "NS" + str([1,3,2,4,3,2,4,1,4,1,3,2,2,4,1,3][(ronde-1)//nbNS * nbNS + int(team[2])-1])
 
 # TODO implem pour 5 équipes de chaque côté
 
 """ for i in range(1, 17):
     for j in range(1,5):
         for k in ["NS", "EO"]:
-            print(f"Ronde #{i} : {k}{j} affronte {getOpponentTeam(k + str(j), i)}")
+            if getOpponentTeam(getOpponentTeam(k+str(j), i), i) != k + str(j):
+                print(f"Mismatch at round #{i}, team {k+str(j)}")
  """
 
 app = Flask(__name__)
 # port is 5000
 
 with app.app_context(): # things to do at run, before any request
-    initDonnes()
-    initScores()
+    dataframe_donnes = initDonnes()
+    dataframe_scores = initScores()
     # WARNING : restarting the server will clear the current tables !!!
 
 ###########
@@ -218,7 +221,7 @@ with app.app_context(): # things to do at run, before any request
 
 @app.get("/")
 def website_root():
-    resp = make_response("""<p>BELOTE</p><p><a href="/register">CONNEXION</a></p><p><a href="/submit">RENTRER RONDE</a></p><p><a href="/pastrounds">CONSULTER ANCIENNES RONDES</a></p><p><a href="/rectification">RECTIFIER RONDE</a></p><p><a href="/unregister">DÉCONNEXION</a></p>""")
+    resp = make_response("""<p><h1>BELOTE</h1></p><p><a href="/register"><h2>CONNEXION</h2></a></p><p><a href="/submit"><h2>RENTRER RONDE</h2></a></p><p><a href="/pastrounds"><h2>CONSULTER ANCIENNES RONDES</h2></a></p><p><a href="/rectification"><h2>RECTIFIER RONDE</h2></a></p><p><a href="/scores"><h2>CONSULTER CLASSEMENT</h2></a></p><p><a href="/unregister"><h2>DÉCONNEXION</h2></a></p>""")
     return resp, 200
 
 @app.get("/submit")
@@ -275,10 +278,10 @@ def submitcode_post():
     try:
         logRonde(name, team, ronde, score)
     except AlreadyReportedCoherentScore as e:
-        resp = make_response(f"""<p>{e.getMsg()}""")
+        resp = make_response(f"""<p>{e.getMsg()}<p><a href="/">RETOUR PAGE PRINCIPALE</a></p>""")
         return resp, 208
     except ContradictionScoreError as e:
-        resp = make_response(f"""<p>ERREUR : {e.getMsg()}""")
+        resp = make_response(f"""<p>ERREUR : {e.getMsg()}<p><a href="/">RETOUR PAGE PRINCIPALE</a></p>""")
         return resp, 409
     resp = make_response("""<p>Ronde correctement enregistrée.</p><p><a href="/">RETOUR PAGE PRINCIPALE</a></p>""")
     return resp, 201
@@ -286,9 +289,9 @@ def submitcode_post():
 @app.get("/scores")
 def scores_get():
     if checkScoreCompleteness():
-        return make_response("""<p>Tous les scores ont été calculés et sont disponibles. C'est l'heure du grand reveal !</p>"""), 200
+        return make_response("""<p>Tous les scores ont été calculés et sont disponibles. C'est l'heure du grand reveal !</p><p><a href="/">RETOUR PAGE PRINCIPALE</a></p>"""), 200
     else:
-        return make_response("""<p>La belote n'est pas terminée pour le moment. Encore un peu de patience !</p>"""), 200
+        return make_response("""<p>La belote n'est pas terminée pour le moment. Encore un peu de patience !</p><p><a href="/">RETOUR PAGE PRINCIPALE</a></p>"""), 200
 
 @app.get("/pastrounds")
 def pastrounds_get():
@@ -298,12 +301,12 @@ def pastrounds_get():
         resp = make_response("""<p>Non identifié auprès serveur - aucun historique de rondes disponible.</p><p><a href="/">RETOUR PAGE PRINCIPALE</a></p>""")
         return resp, 401
     res = f"""<p>RONDES EXISTANTES POUR {name} (équipe {team}) :</p><table style="width:100%"><tr>
-        <th>#RONDE</th>
-        <th>RÉSULTAT</th>
+        <td>#RONDE</td>
+        <td>RÉSULTAT</td>
         </tr>"""
     for (ronde, score, oppTeam) in getRecordedRounds(team):
         res += f"<tr><td>Ronde #{ronde}</td><td>{score} contre {oppTeam}</td></tr>"
-    return make_response(res + "</table>"), 200
+    return make_response(res + """</table><p><a href="/">RETOUR PAGE PRINCIPALE</a></p>"""), 200
 
 @app.get("/rectification")
 def rectification_get():
@@ -359,8 +362,7 @@ def rectification_post():
     try:
         rectifyRonde(name, team, ronde, score)
     except NoScoreToRectify as e:
-        make_response(f"""<p>{e.getMsg()}""")
-        return resp, 405
+        return make_response(f"""<p>{e.getMsg()}"""), 405
     resp = make_response("""<p>Ronde correctement rectifiée.</p><p><a href="/">RETOUR PAGE PRINCIPALE</a></p>""")
     return resp, 201
 
