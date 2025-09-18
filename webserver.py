@@ -21,7 +21,7 @@ extracols_donnes = ["Moyenne NS", "Min NS", "Min EO"]
 extracols_scores = []
 
 extrarows_donnes = ["TOTAL"]
-extrarows_scores = ["TOTAL", "Rang global", "Rang parmi autres NS/EO"]
+extrarows_scores = ["TOTAL", "Rang global", "Rang camp"]
 
 dataframe_donnes = None
 dataframe_scores = None
