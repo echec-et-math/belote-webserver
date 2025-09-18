@@ -37,7 +37,7 @@ def initDonnes():
     for i in range(len(extrarows_donnes)):
         dataframe_donnes.at[4*nbNS+i, column_names[0]] = extrarows_donnes[i]
         for j in column_names[1:]:
-            dataframe_donnes.at[4*nbNS+i, column_names[j]] = None
+            dataframe_donnes.at[4*nbNS+i, j] = None
     dataframe_donnes.to_excel("donnes.xlsx")
 
 def initScores():
@@ -51,7 +51,7 @@ def initScores():
     for i in range(len(extrarows_scores)):
         dataframe_scores.at[4*nbNS+i, column_names[0]] = extrarows_scores[i]
         for j in column_names[1:]:
-            dataframe_scores.at[4*nbNS+i, column_names[j]] = None
+            dataframe_scores.at[4*nbNS+i, j] = None
     dataframe_scores.to_excel("scores.xlsx")
 
 class ContradictionScoreError(Exception):
