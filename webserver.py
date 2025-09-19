@@ -139,6 +139,13 @@ def checkScoreCompleteness():
     return True
 
 def updateRankings():
+    for round in range(1, 4*nbNS+1):
+        finalizeRound(round)
+        print(f"Finalizing round {round}")
+    for team in column_names[1:]:
+        finalizeTeam_Rounds(team)
+        print(f"Finalizing team {team}")
+    print("Checking for score completeness")
     if checkScoreCompleteness():
         scores_all_raw = list(dataframe_scores.at[4*nbNS, team] for team in column_names[1:])
         scores_all_sorted = scores_all_raw[:]
@@ -168,7 +175,7 @@ def finalizeTeam_Scores(team):
     if checkColCompleteness_Scores(team):
         dataframe_scores.at[4*nbNS, team] = sum(dataframe_scores.at[i, team] for i in range(4*nbNS))
         dataframe_scores.to_excel("scores.xlsx")
-        updateRankings()
+        #updateRankings()
 
 def finalizeRound(ronde):
     if checkRowCompleteness(ronde):
@@ -179,7 +186,7 @@ def finalizeRound(ronde):
         dataframe_donnes.to_excel("donnes.xlsx")
         for team in column_names[1:]: # compute round score for every team : the lambda is sign(score) * sqrt(abs(score - avg))
             team_score_for_round = dataframe_donnes.at[int(ronde)-1, team]
-            dataframe_scores.at[int(ronde)-1, team] = (1 if team_score_for_round >= round_avg else -1) * math.sqrt(math.abs(round_avg - team_score_for_round))
+            dataframe_scores.at[int(ronde)-1, team] = (1 if team_score_for_round >= round_avg else -1) * math.sqrt(abs(round_avg - team_score_for_round))
         dataframe_scores.to_excel("scores.xlsx")
 
 ###########
@@ -213,6 +220,8 @@ with app.app_context(): # things to do at run, before any request
     dataframe_donnes = initDonnes()
     dataframe_scores = initScores()
     # WARNING : restarting the server will clear the current tables !!!
+    #dataframe_donnes = pd.read_excel("testdonnes.xlsx")
+    #dataframe_donnes.to_excel("donnes.xlsx")
 
 ###########
 ## Fonctions de l'API
@@ -283,11 +292,16 @@ def submitcode_post():
     except ContradictionScoreError as e:
         resp = make_response(f"""<p>ERREUR : {e.getMsg()}<p><a href="/">RETOUR PAGE PRINCIPALE</a></p>""")
         return resp, 409
+    except Exception as e:
+        resp = make_response("""<p>Erreur serveur pendant la saisie des résultats</p>""")
+        print(e)
+        return resp, 400
     resp = make_response("""<p>Ronde correctement enregistrée.</p><p><a href="/">RETOUR PAGE PRINCIPALE</a></p>""")
     return resp, 201
 
 @app.get("/scores")
 def scores_get():
+    updateRankings()
     if checkScoreCompleteness():
         return make_response("""<p>Tous les scores ont été calculés et sont disponibles. C'est l'heure du grand reveal !</p><p><a href="/">RETOUR PAGE PRINCIPALE</a></p>"""), 200
     else:
