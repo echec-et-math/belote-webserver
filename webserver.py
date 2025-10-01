@@ -1,6 +1,7 @@
 import random as rd
 import pandas as pd
 import math
+from datetime import datetime
 
 from flask import Flask, request, jsonify, make_response
 
@@ -25,6 +26,9 @@ extrarows_scores = ["TOTAL", "Rang global", "Rang camp"]
 
 dataframe_donnes = None
 dataframe_scores = None
+
+COOKIE_ID_FIELDNAME = None
+COOKIE_TEAM_FIELDNAME = None
 
 def initDonnes():
     dataframe_donnes = pd.DataFrame(columns=column_names+extracols_donnes)
@@ -219,6 +223,9 @@ app = Flask(__name__)
 with app.app_context(): # things to do at run, before any request
     dataframe_donnes = initDonnes()
     dataframe_scores = initScores()
+    cur_datetime = datetime.now()
+    COOKIE_ID_FIELDNAME = f"belote_id_{cur_datetime.year}_{cur_datetime.month}_{cur_datetime.day}_{cur_datetime.hour}_{cur_datetime.min}_{cur_datetime.second}"
+    COOKIE_TEAM_FIELDNAME = f"belote_team_{cur_datetime.year}_{cur_datetime.month}_{cur_datetime.day}_{cur_datetime.hour}_{cur_datetime.min}_{cur_datetime.second}"
     # WARNING : restarting the server will clear the current tables !!!
     #dataframe_donnes = pd.read_excel("testdonnes.xlsx")
     #dataframe_donnes.to_excel("donnes.xlsx")
@@ -269,8 +276,8 @@ def submitcode_get():
 
 @app.post("/submit")
 def submitcode_post():
-    name = request.cookies.get("belote_user_id")
-    team = request.cookies.get("belote_user_team")
+    name = request.cookies.get(COOKIE_ID_FIELDNAME)
+    team = request.cookies.get(COOKIE_TEAM_FIELDNAME)
     if name == None or team == None:
         resp = make_response("""<p>Non identifié auprès serveur - soumission de score ignorée.</p><p><a href="/">RETOUR PAGE PRINCIPALE</a></p>""")
         return resp, 401
@@ -309,8 +316,8 @@ def scores_get():
 
 @app.get("/pastrounds")
 def pastrounds_get():
-    name = request.cookies.get("belote_user_id")
-    team = request.cookies.get("belote_user_team")
+    name = request.cookies.get(COOKIE_ID_FIELDNAME)
+    team = request.cookies.get(COOKIE_TEAM_FIELDNAME)
     if name == None or team == None:
         resp = make_response("""<p>Non identifié auprès serveur - aucun historique de rondes disponible.</p><p><a href="/">RETOUR PAGE PRINCIPALE</a></p>""")
         return resp, 401
@@ -358,8 +365,8 @@ def rectification_get():
 
 @app.post("/rectification")
 def rectification_post():
-    name = request.cookies.get("belote_user_id")
-    team = request.cookies.get("belote_user_team")
+    name = request.cookies.get(COOKIE_ID_FIELDNAME)
+    team = request.cookies.get(COOKIE_TEAM_FIELDNAME)
     if name == None or team == None:
         resp = make_response("""<p>Non identifié auprès serveur - rectification de score ignorée.</p><p><a href="/">RETOUR PAGE PRINCIPALE</a></p>""")
         return resp, 401
@@ -412,12 +419,12 @@ def register_post():
         # invalid form post
         resp = make_response("""<p>Enregistrement invalide.</p><p><a href="/">RETOUR PAGE PRINCIPALE</a></p>""")
         return resp, 400
-    cookie1 = request.cookies.get("belote_user_id")
-    cookie2 = request.cookies.get("belote_user_team")
+    cookie1 = request.cookies.get(COOKIE_ID_FIELDNAME)
+    cookie2 = request.cookies.get(COOKIE_TEAM_FIELDNAME)
     resp = make_response(f"""<p>Enregistré en temps que {str(name)} ({str(team)}) !</p><p><a href="/">RETOUR PAGE PRINCIPALE</a></p>""")
     if cookie1 == None or cookie2 == None: # case when only one of them is set is ill-defined and will not be considered apart
-        resp.set_cookie("belote_user_id", name)
-        resp.set_cookie("belote_user_team", team)
+        resp.set_cookie(COOKIE_ID_FIELDNAME, name)
+        resp.set_cookie(COOKIE_TEAM_FIELDNAME, team)
         return resp, 201
     else:
         # user already exists
@@ -426,11 +433,11 @@ def register_post():
 
 @app.get("/unregister")
 def unregister():
-    cookie = request.cookies.get("belote_user_id")
+    cookie = request.cookies.get(COOKIE_ID_FIELDNAME)
     if cookie != None:
         resp = make_response("""<p>Déconnecté.</p><p><a href="/">RETOUR PAGE PRINCIPALE</a></p>""")
-        resp.delete_cookie("belote_user_id")
-        resp.delete_cookie("belote_user_team")
+        resp.delete_cookie(COOKIE_ID_FIELDNAME)
+        resp.delete_cookie(COOKIE_TEAM_FIELDNAME)
         return resp, 201
     else:
         # user doesn't exist
